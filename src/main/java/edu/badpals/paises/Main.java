@@ -168,20 +168,22 @@ public class Main {
         if(pais == null){
             System.out.println("El país de nombre: "+nombre+" no existe. No es posible actualizarlo");
         }else{
+            String nuevoNombre = pedirCadena("Introduzca el nuevo nombre del país para modificarlo",sc);
             Integer nuevo_num_habitantes = pedirHabitantes(sc);
             if(nuevo_num_habitantes == null) return;
             String nuevaCapital = pedirCadena("Introduzca el nombre de la capital: ",sc);
             String nuevaMoneda = pedirCadena("Introduzca el nombre de la moneda: ",sc);
 
             System.out.println("\nLos datos recogidos son los siguientes:");
-            System.out.println("Nombre de país: " + nombre + ", \nnúmero de habitantes: " + nuevo_num_habitantes + ", \ncapital: " +nuevaCapital+ ", \nmoneda: " + nuevaMoneda);
+            System.out.println("Nombre de país: " + nuevoNombre + ", \nnúmero de habitantes: " + nuevo_num_habitantes + ", \ncapital: " +nuevaCapital+ ", \nmoneda: " + nuevaMoneda);
             System.out.println("\nSi es correcto y desea continuar pulse 's'. Si desea abortar la actualización pulse cualquier otra tecla.");
             String respuesta = sc.nextLine().toLowerCase();
             if(respuesta.equals("s")){
+                pais.setNombre(nuevoNombre);
                 pais.setNum_habitantes(nuevo_num_habitantes);
                 pais.setCapital(nuevaCapital);
                 pais.setMoneda(nuevaMoneda);
-                updatePais(pais);
+                updatePais(nombre, pais);
             }else{
                 System.out.println("Actualización abortada.\n");
             }
@@ -283,15 +285,16 @@ public class Main {
         }
     }
 
-    private static void updatePais(Pais pais){
+    private static void updatePais(String nombreAntiguo, Pais pais){
         conectarBD();
         try{
-            String update = "update paises set  NUM_HABITANTES = ?, CAPITAL = ?, moneda = ? where nombre = ?";
+            String update = "update paises set nombre = ?, NUM_HABITANTES = ?, CAPITAL = ?, moneda = ? where nombre = ?";
             PreparedStatement ps = connection.prepareStatement(update);
-            ps.setInt(1,pais.getNum_habitantes());
-            ps.setString(2,pais.getCapital());
-            ps.setString(3,pais.getMoneda());
-            ps.setString(4,pais.getNombre());
+            ps.setString(1,pais.getNombre());
+            ps.setInt(2,pais.getNum_habitantes());
+            ps.setString(3,pais.getCapital());
+            ps.setString(4,pais.getMoneda());
+            ps.setString(5,nombreAntiguo);
 
             int filasActualizadas = ps.executeUpdate();
             if (filasActualizadas == 1) {
