@@ -250,6 +250,7 @@ public class Main {
                 Pais pais = new Pais(nombrePais,num_habitantes,capital,moneda);
                 return pais;
             }
+            ps.close();
         } catch (SQLException e) {
             System.out.println("Error al eliminar datos de país.");
             e.printStackTrace();
