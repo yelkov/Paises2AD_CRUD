@@ -10,10 +10,8 @@ public class Main {
     private static final String PASS = "root";
     private static Connection connection = null;
     private static Statement statement = null;
-    private static List<Pais> paises = new ArrayList<>();
 
     public static void main(String[] args) {
-        cargarPaises();
         Scanner sc = new Scanner(System.in);
         boolean salida = false;
 
@@ -35,7 +33,7 @@ public class Main {
                 case "1":
                 case "mostrar paises":
                 case "mostrar países":
-                    mostrarPaises();
+                    mostrarPaises(sc);
                     break;
                 case "2":
                 case "crear pais":
@@ -58,6 +56,9 @@ public class Main {
                     salida = true;
                     System.out.println("Saliendo del programa. ¡Adiós!");
                     break;
+                default:
+                    System.out.println("Opción no encontrada. Introduzca una de las opciones disponibles: ");
+                    mostrarMenu();
             }
 
         }
@@ -76,8 +77,61 @@ public class Main {
         System.out.println(sb);
     }
 
-    private static void mostrarPaises(){
-        paises.stream().sorted(Comparator.comparing(pais -> pais.getNombre())).forEach(pais -> System.out.println(pais));
+    private static void mostrarPaises(Scanner sc){
+        menuMostrar();
+        boolean salida = false;
+
+        while(!salida){
+            System.out.println("Seleccione una opción (0 para menú): ");
+            String respuesta = sc.nextLine().toLowerCase();
+            switch(respuesta){
+                case "0":
+                case "menu":
+                    menuMostrar();
+                    break;
+                case "1":
+                case "mostrar todos los paises":
+                case "mostrar todos los países":
+                    List<Pais> paises = getPaises();
+                    paises.stream().sorted(Comparator.comparing(Pais::getNombre)).forEach(pais -> System.out.println(pais));
+                    break;
+                case "2":
+                case "mostrar pais":
+                case "mostrar un pais":
+                case "mostrar un país":
+                    String nombre = pedirCadena("Introduzca el nombre del país a buscar",sc);
+                    Pais pais = getPais(nombre);
+                    if(pais != null){
+                        System.out.println(pais);
+                    }else{
+                        System.out.println("El país de nombre: " + nombre + " no existe.");
+                    }
+                    break;
+                case "3":
+                case "salir":
+                case "exit":
+                    salida = true;
+                    System.out.println("Saliendo de la sección Mostrar países.");
+                    break;
+                default:
+                    System.out.println("Introduzca una de las opciones disponibles (0-3)");
+                    mostrarMenu();
+                    break;
+            }
+        }
+
+
+    }
+
+    private static void menuMostrar(){
+        StringBuilder sb = new StringBuilder();
+        sb.append("==== MOSTRAR PAISES ====\n")
+                .append("0. Menú\n")
+                .append("1. Mostrar todos los países\n")
+                .append("2. Mostrar un país\n")
+                .append("3. Salir/Exit\n");
+
+        System.out.println(sb);
     }
 
     private static void crearPais(Scanner sc){
@@ -99,7 +153,6 @@ public class Main {
             String respuesta = sc.nextLine().toLowerCase();
             if(respuesta.equals("s")){
                 Pais pais = new Pais(nombre,num_habitantes,capital,moneda);
-                paises.add(pais);
                 insertPais(pais);
             }else{
                 System.out.println("Creación abortada.\n");
@@ -146,21 +199,12 @@ public class Main {
             String respuesta = sc.nextLine().toLowerCase();
             if(respuesta.equals("s")){
                 deletePais(pais);
-                paises.remove(pais);
             }else{
                 System.out.println("Eliminación abortada.\n");
             }
         }
     }
 
-    private static Pais getPais(String nombre){
-        Optional<Pais> paisOptional = paises.stream().filter(p -> p.getNombre().equals(nombre)).findAny();
-        if(paisOptional.isPresent()){
-            return paisOptional.get();
-        }else{
-            return null;
-        }
-    }
 
     private static String pedirCadena(String mensaje, Scanner sc) {
         System.out.println(mensaje);
@@ -189,6 +233,30 @@ public class Main {
             }
         }
         return num_habitantes;
+    }
+
+    private static Pais getPais(String nombre){
+        conectarBD();
+        try{
+            String selectPais = "select * from paises where nombre = ?";
+            PreparedStatement ps = connection.prepareStatement(selectPais);
+            ps.setString(1, nombre);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                String nombrePais = rs.getString("nombre");
+                int num_habitantes = rs.getInt("num_habitantes");
+                String capital = rs.getString("capital");
+                String moneda = rs.getString("moneda");
+                Pais pais = new Pais(nombrePais,num_habitantes,capital,moneda);
+                return pais;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al eliminar datos de país.");
+            e.printStackTrace();
+        }finally {
+            desconectarBD();
+        }
+        return null;
     }
 
     private static void deletePais(Pais pais){
@@ -261,7 +329,8 @@ public class Main {
         }
     }
 
-    private static void cargarPaises(){
+    private static List<Pais> getPaises(){
+        List<Pais> paises = new ArrayList<>();
         conectarBD();
         try(ResultSet rs = statement.executeQuery("select * from paises")){
             while(rs.next()){
@@ -272,12 +341,14 @@ public class Main {
                 Pais pais = new Pais(nombre,num_habitantes,capital,moneda);
                 paises.add(pais);
             }
+            return paises;
         } catch (SQLException e) {
             System.out.println("Error al leer los datos de países.");
             e.printStackTrace();
         }finally {
             desconectarBD();
         }
+        return null;
 
     }
 
